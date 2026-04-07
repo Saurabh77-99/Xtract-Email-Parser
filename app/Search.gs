@@ -558,9 +558,7 @@ function handleExportJob(e) {
 
 function handleExportJobPdf(e) {
   var job = getJobStatus(e.parameters.jobId);
-  var summaryRes = UrlFetchApp.fetch(BACKEND_URL + "/summary/" + job.ruleId, {
-    muteHttpExceptions: true,
-  });
+  var summaryRes = UrlFetchApp.fetch(BACKEND_URL + "/summary/" + job.ruleId, { muteHttpExceptions: true });
   var summary = JSON.parse(summaryRes.getContentText());
 
   if (!summary.data || summary.data.length === 0) {
@@ -574,21 +572,17 @@ function handleExportJobPdf(e) {
   var doc = DocumentApp.create(docTitle);
   var body = doc.getBody();
 
-  body
-    .appendParagraph("EMAIL PARSER REPORT")
-    .setHeading(DocumentApp.ParagraphHeading.HEADING1);
+  body.appendParagraph("EMAIL PARSER REPORT").setHeading(DocumentApp.ParagraphHeading.HEADING1);
   body.appendParagraph("Generated: " + new Date().toLocaleString());
   body.appendParagraph("User: " + userEmail);
   body.appendParagraph("Total Emails: " + summary.data.length);
   body.appendHorizontalRule();
 
-  summary.data.forEach(function (item, idx) {
-    body
-      .appendParagraph(idx + 1 + ". " + (item.subject || "No Subject"))
-      .setHeading(DocumentApp.ParagraphHeading.HEADING2);
+  summary.data.forEach(function(item, idx) {
+    body.appendParagraph((idx + 1) + ". " + (item.subject || "No Subject")).setHeading(DocumentApp.ParagraphHeading.HEADING2);
     body.appendParagraph("From: " + (item.sender || ""));
     body.appendParagraph("Date: " + (item.createdAt || ""));
-    Object.keys(item.fields).forEach(function (k) {
+    Object.keys(item.fields).forEach(function(k) {
       if (!k.startsWith("attachment_") && !k.startsWith("content_")) {
         body.appendParagraph("• " + k + ": " + item.fields[k]);
       }
@@ -597,11 +591,28 @@ function handleExportJobPdf(e) {
   });
 
   doc.saveAndClose();
-  var pdf = DriveApp.getFileById(doc.getId())
-    .getBlob()
-    .getAs("application/pdf");
-  pdf.setName(docTitle + ".pdf");
-  var pdfFile = DriveApp.createFile(pdf);
+  var docId = doc.getId();
+
+  // Wait for Drive to finish processing
+  Utilities.sleep(3000);
+
+  // Use Drive API export instead of getAs (much more reliable)
+  var pdfBlob;
+  try {
+    pdfBlob = Drive.Files.export(docId, "application/pdf");
+  } catch (apiErr) {
+    // Fallback if API fails
+    DriveApp.getFileById(docId).setTrashed(true);
+    return CardService.newActionResponseBuilder()
+      .setNotification(CardService.newNotification().setText("⚠️ PDF generation failed. Try Export to Sheets instead."))
+      .build();
+  }
+
+  pdfBlob.setName(docTitle + ".pdf");
+  var pdfFile = DriveApp.createFile(pdfBlob);
+
+  // Clean up the temp Google Doc
+  DriveApp.getFileById(docId).setTrashed(true);
 
   clearJobProperties(e.parameters.jobId);
 
