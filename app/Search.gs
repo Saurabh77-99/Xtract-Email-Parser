@@ -204,26 +204,26 @@ function renderSearchView() {
 // ============================================================
 
 function handleSearchSubmit(e) {
-  if (!checkDailyLimit()) {
-    return CardService.newActionResponseBuilder()
-      .setNotification(
-        CardService.newNotification().setText(
-          "❌ Daily import limit reached (" +
-            PLAN_DAILY_LIMIT +
-            "/day on Free plan).",
-        ),
-      )
-      .build();
-  }
-  if (!checkMonthlyLimit()) {
-    return CardService.newActionResponseBuilder()
-      .setNotification(
-        CardService.newNotification().setText(
-          "❌ Monthly import limit reached (" + PLAN_MONTHLY_LIMIT + "/month).",
-        ),
-      )
-      .build();
-  }
+  // if (!checkDailyLimit()) {
+  //   return CardService.newActionResponseBuilder()
+  //     .setNotification(
+  //       CardService.newNotification().setText(
+  //         "❌ Daily import limit reached (" +
+  //           PLAN_DAILY_LIMIT +
+  //           "/day on Free plan).",
+  //       ),
+  //     )
+  //     .build();
+  // }
+  // if (!checkMonthlyLimit()) {
+  //   return CardService.newActionResponseBuilder()
+  //     .setNotification(
+  //       CardService.newNotification().setText(
+  //         "❌ Monthly import limit reached (" + PLAN_MONTHLY_LIMIT + "/month).",
+  //       ),
+  //     )
+  //     .build();
+  // }
 
   var fi = e.formInput;
   var subject = fi.f_subject || "";
@@ -252,7 +252,7 @@ function handleSearchSubmit(e) {
       if (type === "entire") {
         targetFields[key] = { type: "entire", anchor: "", end: "paragraph" };
       } else if (type === "regex") {
-        targetFields[key] = anchor; // raw regex string
+        targetFields[key] = anchor;
       } else {
         targetFields[key] = {
           type: type || "after",

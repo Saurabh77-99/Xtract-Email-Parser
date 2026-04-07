@@ -9,42 +9,42 @@ function renderMoreView() {
   );
   builder.addSection(createTopNav("more"));
 
-  // Plan + limits
-  var counts = getImportCounts();
-  builder.addSection(
-    CardService.newCardSection()
-      .setHeader("Manage License")
-      .addWidget(
-        CardService.newKeyValue().setTopLabel("Plan").setContent("Free"),
-      )
-      .addWidget(
-        CardService.newKeyValue()
-          .setTopLabel("Search Fields Limit")
-          .setContent(String(PLAN_FIELD_LIMIT)),
-      )
-      .addWidget(
-        CardService.newKeyValue()
-          .setTopLabel("Saved Search Limit")
-          .setContent(String(PLAN_SAVED_LIMIT)),
-      )
-      .addWidget(
-        CardService.newKeyValue()
-          .setTopLabel("Import Limit (Day)")
-          .setContent(counts.daily + " out of " + PLAN_DAILY_LIMIT),
-      )
-      .addWidget(
-        CardService.newKeyValue()
-          .setTopLabel("Import Limit (Month)")
-          .setContent(counts.monthly + " out of " + PLAN_MONTHLY_LIMIT),
-      )
-      .addWidget(
-        CardService.newTextButton()
-          .setText("Reset Counts")
-          .setOnClickAction(
-            CardService.newAction().setFunctionName("handleResetCounts"),
-          ),
-      ),
-  );
+  // // Plan + limits
+  // var counts = getImportCounts();
+  // builder.addSection(
+  //   CardService.newCardSection()
+  //     .setHeader("Manage License")
+  //     .addWidget(
+  //       CardService.newKeyValue().setTopLabel("Plan").setContent("Free"),
+  //     )
+  //     .addWidget(
+  //       CardService.newKeyValue()
+  //         .setTopLabel("Search Fields Limit")
+  //         .setContent(String(PLAN_FIELD_LIMIT)),
+  //     )
+  //     .addWidget(
+  //       CardService.newKeyValue()
+  //         .setTopLabel("Saved Search Limit")
+  //         .setContent(String(PLAN_SAVED_LIMIT)),
+  //     )
+  //     .addWidget(
+  //       CardService.newKeyValue()
+  //         .setTopLabel("Import Limit (Day)")
+  //         .setContent(counts.daily + " out of " + PLAN_DAILY_LIMIT),
+  //     )
+  //     .addWidget(
+  //       CardService.newKeyValue()
+  //         .setTopLabel("Import Limit (Month)")
+  //         .setContent(counts.monthly + " out of " + PLAN_MONTHLY_LIMIT),
+  //     )
+  //     .addWidget(
+  //       CardService.newTextButton()
+  //         .setText("Reset Counts")
+  //         .setOnClickAction(
+  //           CardService.newAction().setFunctionName("handleResetCounts"),
+  //         ),
+  //     ),
+  // );
 
   // Search tips
   builder.addSection(
@@ -78,51 +78,51 @@ function renderMoreView() {
   return builder.build();
 }
 
-function handleResetCounts() {
-  var props = PropertiesService.getUserProperties();
-  props.deleteProperty("daily_count");
-  props.deleteProperty("daily_date");
-  props.deleteProperty("monthly_count");
-  props.deleteProperty("monthly_month");
-  return CardService.newActionResponseBuilder()
-    .setNotification(
-      CardService.newNotification().setText("✅ Import counts reset."),
-    )
-    .setNavigation(CardService.newNavigation().updateCard(renderMoreView()))
-    .build();
-}
+// function handleResetCounts() {
+//   var props = PropertiesService.getUserProperties();
+//   props.deleteProperty("daily_count");
+//   props.deleteProperty("daily_date");
+//   props.deleteProperty("monthly_count");
+//   props.deleteProperty("monthly_month");
+//   return CardService.newActionResponseBuilder()
+//     .setNotification(
+//       CardService.newNotification().setText("✅ Import counts reset."),
+//     )
+//     .setNavigation(CardService.newNavigation().updateCard(renderMoreView()))
+//     .build();
+// }
 
-function getImportCounts() {
-  var props = PropertiesService.getUserProperties();
-  var today = new Date().toDateString();
-  var thisMonth = new Date().getMonth() + "-" + new Date().getFullYear();
-  var daily =
-    props.getProperty("daily_date") === today
-      ? parseInt(props.getProperty("daily_count") || "0")
-      : 0;
-  var monthly =
-    props.getProperty("monthly_month") === thisMonth
-      ? parseInt(props.getProperty("monthly_count") || "0")
-      : 0;
-  return { daily: daily, monthly: monthly };
-}
+// function getImportCounts() {
+//   var props = PropertiesService.getUserProperties();
+//   var today = new Date().toDateString();
+//   var thisMonth = new Date().getMonth() + "-" + new Date().getFullYear();
+//   var daily =
+//     props.getProperty("daily_date") === today
+//       ? parseInt(props.getProperty("daily_count") || "0")
+//       : 0;
+//   var monthly =
+//     props.getProperty("monthly_month") === thisMonth
+//       ? parseInt(props.getProperty("monthly_count") || "0")
+//       : 0;
+//   return { daily: daily, monthly: monthly };
+// }
 
-function checkDailyLimit() {
-  return getImportCounts().daily < PLAN_DAILY_LIMIT;
-}
-function checkMonthlyLimit() {
-  return getImportCounts().monthly < PLAN_MONTHLY_LIMIT;
-}
+// function checkDailyLimit() {
+//   return getImportCounts().daily < PLAN_DAILY_LIMIT;
+// }
+// function checkMonthlyLimit() {
+//   return getImportCounts().monthly < PLAN_MONTHLY_LIMIT;
+// }
 
-function incrementImportCount(count) {
-  var props = PropertiesService.getUserProperties();
-  var today = new Date().toDateString();
-  var thisMonth = new Date().getMonth() + "-" + new Date().getFullYear();
-  var counts = getImportCounts();
-  props.setProperties({
-    daily_date: today,
-    daily_count: String(counts.daily + count),
-    monthly_month: thisMonth,
-    monthly_count: String(counts.monthly + count),
-  });
-}
+// function incrementImportCount(count) {
+//   var props = PropertiesService.getUserProperties();
+//   var today = new Date().toDateString();
+//   var thisMonth = new Date().getMonth() + "-" + new Date().getFullYear();
+//   var counts = getImportCounts();
+//   props.setProperties({
+//     daily_date: today,
+//     daily_count: String(counts.daily + count),
+//     monthly_month: thisMonth,
+//     monthly_count: String(counts.monthly + count),
+//   });
+// }

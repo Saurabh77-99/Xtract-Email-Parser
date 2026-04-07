@@ -28,15 +28,15 @@ function renderSettingsView() {
         ),
     );
 
-  if (saved.length >= PLAN_SAVED_LIMIT) {
-    saveSection.addWidget(
-      CardService.newTextParagraph().setText(
-        "⚠️ Saved search limit reached (" +
-          PLAN_SAVED_LIMIT +
-          " on Free plan).",
-      ),
-    );
-  }
+  // if (saved.length >= PLAN_SAVED_LIMIT) {
+  //   saveSection.addWidget(
+  //     CardService.newTextParagraph().setText(
+  //       "⚠️ Saved search limit reached (" +
+  //         PLAN_SAVED_LIMIT +
+  //         " on Free plan).",
+  //     ),
+  //   );
+  // }
   builder.addSection(saveSection);
 
   // Saved searches list

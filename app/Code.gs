@@ -1,8 +1,8 @@
 const BACKEND_URL = "https://extract-email-parser.vercel.app/";
-const PLAN_DAILY_LIMIT = 10;
-const PLAN_MONTHLY_LIMIT = 50;
-const PLAN_FIELD_LIMIT = 3;
-const PLAN_SAVED_LIMIT = 3;
+// const PLAN_DAILY_LIMIT = 10;
+// const PLAN_MONTHLY_LIMIT = 50;
+// const PLAN_FIELD_LIMIT = 3;
+// const PLAN_SAVED_LIMIT = 3;
 
 function buildHomePage() {
   return renderSearchView();
