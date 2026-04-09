@@ -1,5 +1,5 @@
 // ============================================================
-// SEARCH VIEW — Extractor style
+// SEARCH VIEW
 // ============================================================
 
 function renderSearchView() {
@@ -45,14 +45,18 @@ function renderSearchView() {
         CardService.newSelectionInput()
           .setType(CardService.SelectionInputType.CHECK_BOX)
           .setFieldName("f_thread")
-          .addItem("Search within each thread", "yes", false),
+          .addItem(
+            "Search within each thread (all messages, not just latest)",
+            "yes",
+            false,
+          ),
       )
       .addWidget(
         CardService.newSelectionInput()
           .setType(CardService.SelectionInputType.CHECK_BOX)
           .setFieldName("f_html")
           .addItem(
-            "Search email as HTML (only use when plainbody not present)",
+            "Search email as HTML (only use when plain body not present)",
             "yes",
             false,
           ),
@@ -62,7 +66,7 @@ function renderSearchView() {
   // Extract Data — Field 1
   builder.addSection(
     CardService.newCardSection()
-      .setHeader("Extract Data")
+      .setHeader("Extract Data — Field 1")
       .addWidget(
         CardService.newTextInput()
           .setFieldName("col_1")
@@ -96,7 +100,7 @@ function renderSearchView() {
       ),
   );
 
-  // Field 2
+  // Extract Data — Field 2
   builder.addSection(
     CardService.newCardSection()
       .setHeader("Extract Data — Field 2 (optional)")
@@ -133,7 +137,7 @@ function renderSearchView() {
       ),
   );
 
-  // Field 3
+  // Extract Data — Field 3
   builder.addSection(
     CardService.newCardSection()
       .setHeader("Extract Data — Field 3 (optional)")
@@ -178,17 +182,23 @@ function renderSearchView() {
           .setType(CardService.SelectionInputType.DROPDOWN)
           .setFieldName("output_mode")
           .setTitle("Output mode")
-          .addItem("Write to new Google Sheet", "sheet", true)
-          .addItem("Write directly (no backend storage)", "direct", false),
+          .addItem("Store & export (backend + Google Sheets)", "sheet", true)
+          .addItem(
+            "Write directly to Sheet (no backend storage)",
+            "direct",
+            false,
+          ),
       )
       .addWidget(
         CardService.newTextParagraph().setText(
-          "By submitting, the requested data will overwrite the current sheet from the top left cell.",
+          "💡 Tip: Use date filters to avoid timeouts on large mailboxes. Max " +
+            MAX_THREADS +
+            " threads per run.",
         ),
       )
       .addWidget(
         CardService.newTextButton()
-          .setText("submit")
+          .setText("Submit")
           .setTextButtonStyle(CardService.TextButtonStyle.FILLED)
           .setOnClickAction(
             CardService.newAction().setFunctionName("handleSearchSubmit"),
@@ -200,39 +210,19 @@ function renderSearchView() {
 }
 
 // ============================================================
-// SUBMIT
+// SUBMIT — runs synchronously
 // ============================================================
 
 function handleSearchSubmit(e) {
-  // if (!checkDailyLimit()) {
-  //   return CardService.newActionResponseBuilder()
-  //     .setNotification(
-  //       CardService.newNotification().setText(
-  //         "❌ Daily import limit reached (" +
-  //           PLAN_DAILY_LIMIT +
-  //           "/day on Free plan).",
-  //       ),
-  //     )
-  //     .build();
-  // }
-  // if (!checkMonthlyLimit()) {
-  //   return CardService.newActionResponseBuilder()
-  //     .setNotification(
-  //       CardService.newNotification().setText(
-  //         "❌ Monthly import limit reached (" + PLAN_MONTHLY_LIMIT + "/month).",
-  //       ),
-  //     )
-  //     .build();
-  // }
-
   var fi = e.formInput;
   var subject = fi.f_subject || "";
   var sender = fi.f_sender || "";
   var startDate = fi.f_start || "";
   var endDate = fi.f_end || "";
   var outputMode = fi.output_mode || "sheet";
+  var searchThread = fi.f_thread === "yes";
+  var searchHtml = fi.f_html === "yes";
 
-  // Build query
   var query = "";
   if (subject) query += 'subject:"' + subject + '" ';
   if (sender) query += "from:" + sender + " ";
@@ -240,13 +230,13 @@ function handleSearchSubmit(e) {
   if (endDate) query += "before:" + toGmailDate(endDate) + " ";
   query = query.trim() || "in:inbox";
 
-  // Build targetFields from up to 3 field definitions
   var targetFields = {};
   for (var i = 1; i <= 3; i++) {
-    var col = fi["col_" + i];
-    var type = fi["type_" + i];
-    var anchor = fi["anchor_" + i];
-    var end = fi["end_" + i];
+    var col = fi["col_" + i] || "";
+    var type = fi["type_" + i] || "after";
+    var anchor = fi["anchor_" + i] || "";
+    var end = fi["end_" + i] || "word";
+
     if (col && anchor) {
       var key = col.toLowerCase().replace(/\s+/g, "_");
       if (type === "entire") {
@@ -254,11 +244,7 @@ function handleSearchSubmit(e) {
       } else if (type === "regex") {
         targetFields[key] = anchor;
       } else {
-        targetFields[key] = {
-          type: type || "after",
-          anchor: anchor,
-          end: end || "word",
-        };
+        targetFields[key] = { type: type, anchor: anchor, end: end };
       }
     }
   }
@@ -273,14 +259,13 @@ function handleSearchSubmit(e) {
       .build();
   }
 
-  // DIRECT MODE — no backend, write straight to Sheets
   if (outputMode === "direct") {
-    return handleDirectMode(query, targetFields, fi);
+    return handleDirectMode(query, targetFields, searchThread, searchHtml);
   }
 
-  // BACKEND MODE — save rule + background sync
   var ruleName =
     "Search: " + (subject || sender || new Date().toLocaleDateString());
+
   var saveRes = UrlFetchApp.fetch(BACKEND_URL + "/rules", {
     method: "post",
     contentType: "application/json",
@@ -297,7 +282,7 @@ function handleSearchSubmit(e) {
     return CardService.newActionResponseBuilder()
       .setNotification(
         CardService.newNotification().setText(
-          "❌ Backend error. Check settings.",
+          "❌ Backend error (" + saveRes.getResponseCode() + ").",
         ),
       )
       .build();
@@ -305,70 +290,392 @@ function handleSearchSubmit(e) {
 
   var allRules = fetchFromBackend("/rules");
   var newRule = null;
-  if (allRules)
+  if (allRules) {
     allRules.forEach(function (r) {
       if (r.name === ruleName && (!newRule || r.id > newRule.id)) newRule = r;
     });
+  }
   if (!newRule) {
     return CardService.newActionResponseBuilder()
       .setNotification(
-        CardService.newNotification().setText("❌ Could not retrieve rule."),
+        CardService.newNotification().setText(
+          "❌ Could not retrieve new rule from backend.",
+        ),
       )
       .build();
   }
 
-  var jobId = "job_" + new Date().getTime();
-  var props = PropertiesService.getUserProperties();
-  props.setProperties({
-    [jobId + "_ruleId"]: newRule.id.toString(),
-    [jobId + "_query"]: query,
-    [jobId + "_status"]: "running",
-    [jobId + "_count"]: "0",
-  });
-  props.setProperty("latest_job_id", jobId);
+  var threads = GmailApp.search(query, 0, MAX_THREADS);
+  var count = 0;
+  var skipped = 0;
 
-  ScriptApp.newTrigger("runBackgroundSync").timeBased().after(500).create();
+  for (var t = 0; t < threads.length; t++) {
+    var msgs = searchThread
+      ? threads[t].getMessages()
+      : [threads[t].getMessages()[threads[t].getMessages().length - 1]];
+
+    for (var m = 0; m < msgs.length; m++) {
+      var message = msgs[m];
+      if (hasLabel(message, "Parsed/Rule_" + newRule.id)) {
+        skipped++;
+        continue;
+      }
+      try {
+        var body = searchHtml ? message.getBody() : message.getPlainBody();
+        var result = ingestMessageWithBody(message, newRule.id, body);
+        if (result && result.status === "success") {
+          markAsProcessed(message, newRule.id);
+          count++;
+        }
+      } catch (err) {
+        console.error(
+          "Ingest error on message " + message.getId() + ": " + err,
+        );
+      }
+    }
+  }
+
+  var notice =
+    count > 0
+      ? "✅ " + count + " email" + (count === 1 ? "" : "s") + " imported!"
+      : skipped > 0
+        ? "ℹ️ All matching emails already imported (skipped " + skipped + ")."
+        : "⚠️ No emails matched the filter.";
 
   return CardService.newActionResponseBuilder()
-    .setNotification(
-      CardService.newNotification().setText("🚀 Import started!"),
-    )
+    .setNotification(CardService.newNotification().setText(notice))
     .setNavigation(
-      CardService.newNavigation().pushCard(renderJobCard(jobId, ruleName)),
+      CardService.newNavigation().pushCard(
+        renderResultCard(newRule.id, ruleName, count, skipped),
+      ),
     )
     .build();
 }
 
 // ============================================================
-// DIRECT MODE — no backend, writes to Sheet inline
+// RESULT CARD
 // ============================================================
 
-function handleDirectMode(query, targetFields, fi) {
-  var threads = GmailApp.search(query, 0, 10);
-  var rows = [];
-  var headers = ["Subject", "Sender", "Date"];
+function renderResultCard(ruleId, jobName, count, skipped) {
+  var builder = CardService.newCardBuilder();
+  builder.setHeader(
+    CardService.newCardHeader()
+      .setTitle("Email Parser")
+      .setSubtitle("Import Complete"),
+  );
+  builder.addSection(createTopNav("search"));
 
-  var fieldKeys = Object.keys(targetFields);
-  fieldKeys.forEach(function (k) {
-    headers.push(k);
+  var section = CardService.newCardSection().setHeader(
+    jobName || "Import Result",
+  );
+
+  if (count > 0) {
+    section.addWidget(
+      CardService.newTextParagraph().setText(
+        "✅ " +
+          count +
+          " email" +
+          (count === 1 ? "" : "s") +
+          " successfully imported." +
+          (skipped > 0 ? "\n(" + skipped + " already imported, skipped.)" : ""),
+      ),
+    );
+    section.addWidget(
+      CardService.newButtonSet()
+        .addButton(
+          CardService.newTextButton()
+            .setText("📊 EXPORT TO SHEETS")
+            .setTextButtonStyle(CardService.TextButtonStyle.FILLED)
+            .setOnClickAction(
+              CardService.newAction()
+                .setFunctionName("handleExportToSheets")
+                .setParameters({ ruleId: String(ruleId) }),
+            ),
+        )
+        .addButton(
+          CardService.newTextButton()
+            .setText("📄 EXPORT TO PDF")
+            .setOnClickAction(
+              CardService.newAction()
+                .setFunctionName("handleExportToPdf")
+                .setParameters({ ruleId: String(ruleId) }),
+            ),
+        ),
+    );
+  } else if (skipped > 0) {
+    section.addWidget(
+      CardService.newTextParagraph().setText(
+        "ℹ️ " +
+          skipped +
+          " email" +
+          (skipped === 1 ? "" : "s") +
+          " already imported previously.\n\nYou can still export them below.",
+      ),
+    );
+    section.addWidget(
+      CardService.newButtonSet()
+        .addButton(
+          CardService.newTextButton()
+            .setText("📊 EXPORT TO SHEETS")
+            .setTextButtonStyle(CardService.TextButtonStyle.FILLED)
+            .setOnClickAction(
+              CardService.newAction()
+                .setFunctionName("handleExportToSheets")
+                .setParameters({ ruleId: String(ruleId) }),
+            ),
+        )
+        .addButton(
+          CardService.newTextButton()
+            .setText("📄 EXPORT TO PDF")
+            .setOnClickAction(
+              CardService.newAction()
+                .setFunctionName("handleExportToPdf")
+                .setParameters({ ruleId: String(ruleId) }),
+            ),
+        ),
+    );
+  } else {
+    section.addWidget(
+      CardService.newTextParagraph().setText(
+        "⚠️ No emails matched the filter.\n\nTry adjusting subject, sender, or date range.",
+      ),
+    );
+  }
+
+  section.addWidget(CardService.newDivider());
+  section.addWidget(
+    CardService.newTextButton()
+      .setText("← NEW SEARCH")
+      .setOnClickAction(
+        CardService.newAction().setFunctionName("handleNavToSearch"),
+      ),
+  );
+
+  builder.addSection(section);
+  return builder.build();
+}
+
+function handleNavToSearch(e) {
+  return CardService.newActionResponseBuilder()
+    .setNavigation(CardService.newNavigation().updateCard(renderSearchView()))
+    .build();
+}
+
+// ============================================================
+// EXPORT TO SHEETS
+// ============================================================
+
+function handleExportToSheets(e) {
+  var ruleId = parseInt(e.parameters.ruleId);
+  var summaryRes = UrlFetchApp.fetch(BACKEND_URL + "/summary/" + ruleId, {
+    muteHttpExceptions: true,
   });
 
-  threads.forEach(function (thread) {
-    thread.getMessages().forEach(function (message) {
-      var body = message.getPlainBody();
+  if (summaryRes.getResponseCode() !== 200) {
+    return CardService.newActionResponseBuilder()
+      .setNotification(
+        CardService.newNotification().setText(
+          "❌ Could not fetch data from backend.",
+        ),
+      )
+      .build();
+  }
+
+  var summary = JSON.parse(summaryRes.getContentText());
+
+  if (!summary.data || summary.data.length === 0) {
+    return CardService.newActionResponseBuilder()
+      .setNotification(
+        CardService.newNotification().setText("⚠️ No extracted data found."),
+      )
+      .build();
+  }
+
+  var allKeys = [];
+  summary.data.forEach(function (item) {
+    Object.keys(item.fields || {}).forEach(function (k) {
+      if (
+        !k.startsWith("attachment_") &&
+        !k.startsWith("content_") &&
+        allKeys.indexOf(k) === -1
+      )
+        allKeys.push(k);
+    });
+  });
+
+  var header = ["Subject", "Sender", "Date"].concat(allKeys);
+  var rows = summary.data.map(function (item) {
+    var row = [item.subject || "", item.sender || "", item.createdAt || ""];
+    allKeys.forEach(function (k) {
+      row.push((item.fields || {})[k] || "");
+    });
+    return row;
+  });
+
+  var ss = SpreadsheetApp.create(
+    "Email Parser Export — " + new Date().toLocaleDateString(),
+  );
+  var sheet = ss.getSheets()[0];
+  sheet.getRange(1, 1, 1, header.length).setValues([header]);
+  sheet
+    .getRange(1, 1, 1, header.length)
+    .setFontWeight("bold")
+    .setBackground("#4a86e8")
+    .setFontColor("#ffffff");
+  if (rows.length > 0)
+    sheet.getRange(2, 1, rows.length, header.length).setValues(rows);
+  sheet.autoResizeColumns(1, header.length);
+
+  return CardService.newActionResponseBuilder()
+    .setNotification(
+      CardService.newNotification().setText(
+        "✅ " + rows.length + " records exported to Sheets!",
+      ),
+    )
+    .setOpenLink(CardService.newOpenLink().setUrl(ss.getUrl()))
+    .build();
+}
+
+// ============================================================
+// EXPORT TO PDF — reliable HTTP download method
+// ============================================================
+
+function handleExportToPdf(e) {
+  var ruleId = parseInt(e.parameters.ruleId);
+  var summaryRes = UrlFetchApp.fetch(BACKEND_URL + "/summary/" + ruleId, {
+    muteHttpExceptions: true,
+  });
+
+  if (summaryRes.getResponseCode() !== 200) {
+    return CardService.newActionResponseBuilder()
+      .setNotification(
+        CardService.newNotification().setText(
+          "❌ Could not fetch data from backend.",
+        ),
+      )
+      .build();
+  }
+
+  var summary = JSON.parse(summaryRes.getContentText());
+
+  if (!summary.data || summary.data.length === 0) {
+    return CardService.newActionResponseBuilder()
+      .setNotification(
+        CardService.newNotification().setText("⚠️ No data to export."),
+      )
+      .build();
+  }
+
+  var userEmail = Session.getActiveUser().getEmail();
+  var docTitle = "Email Parser Report — " + new Date().toLocaleDateString();
+  var doc = DocumentApp.create(docTitle);
+  var body = doc.getBody();
+
+  body
+    .appendParagraph("EMAIL PARSER REPORT")
+    .setHeading(DocumentApp.ParagraphHeading.HEADING1);
+  body.appendParagraph("Generated: " + new Date().toLocaleString());
+  body.appendParagraph("User: " + userEmail);
+  body.appendParagraph("Total Emails: " + summary.data.length);
+  body.appendHorizontalRule();
+
+  summary.data.forEach(function (item, idx) {
+    body
+      .appendParagraph(idx + 1 + ". " + (item.subject || "No Subject"))
+      .setHeading(DocumentApp.ParagraphHeading.HEADING2);
+    body.appendParagraph("From: " + (item.sender || ""));
+    body.appendParagraph("Date: " + (item.createdAt || ""));
+    Object.keys(item.fields || {}).forEach(function (k) {
+      if (!k.startsWith("attachment_") && !k.startsWith("content_")) {
+        body.appendParagraph("• " + k + ": " + item.fields[k]);
+      }
+    });
+    body.appendHorizontalRule();
+  });
+
+  doc.saveAndClose();
+  var docId = doc.getId();
+
+  Utilities.sleep(2000);
+
+  try {
+    // Download PDF via HTTP — 100% reliable in add-ons (no Drive API weirdness)
+    var url =
+      "https://docs.google.com/feeds/download/documents/export/Export?id=" +
+      docId +
+      "&exportFormat=pdf";
+    var token = ScriptApp.getOAuthToken();
+    var pdfBlob = UrlFetchApp.fetch(url, {
+      headers: { Authorization: "Bearer " + token },
+    })
+      .getBlob()
+      .setName(docTitle + ".pdf");
+
+    var pdfFile = DriveApp.createFile(pdfBlob);
+    DriveApp.getFileById(docId).setTrashed(true);
+
+    return CardService.newActionResponseBuilder()
+      .setNotification(
+        CardService.newNotification().setText("📄 PDF created successfully!"),
+      )
+      .setOpenLink(CardService.newOpenLink().setUrl(pdfFile.getUrl()))
+      .build();
+  } catch (err) {
+    DriveApp.getFileById(docId).setTrashed(true);
+    return CardService.newActionResponseBuilder()
+      .setNotification(
+        CardService.newNotification().setText(
+          "⚠️ PDF failed. Try Export to Sheets.",
+        ),
+      )
+      .build();
+  }
+}
+
+// ============================================================
+// DIRECT MODE
+// ============================================================
+
+function handleDirectMode(query, targetFields, searchThread, searchHtml) {
+  var threads = GmailApp.search(query, 0, MAX_THREADS);
+
+  if (threads.length === 0) {
+    return CardService.newActionResponseBuilder()
+      .setNotification(
+        CardService.newNotification().setText(
+          "⚠️ No emails found for this query.",
+        ),
+      )
+      .build();
+  }
+
+  var fieldKeys = Object.keys(targetFields);
+  var headers = ["Subject", "Sender", "Date"].concat(fieldKeys);
+  var rows = [];
+
+  for (var t = 0; t < threads.length; t++) {
+    var msgs = searchThread
+      ? threads[t].getMessages()
+      : [threads[t].getMessages()[threads[t].getMessages().length - 1]];
+
+    for (var m = 0; m < msgs.length; m++) {
+      var message = msgs[m];
+      var body = searchHtml ? message.getBody() : message.getPlainBody();
       var row = [
         message.getSubject(),
         message.getFrom(),
         message.getDate().toLocaleDateString(),
       ];
+
       fieldKeys.forEach(function (k) {
         var def = targetFields[k];
         var val = "";
         if (typeof def === "string") {
           try {
-            var m = body.match(new RegExp(def, "i"));
-            if (m) val = m[1] || m[0];
-          } catch (e) {}
+            var rx = new RegExp(def, "i");
+            var match = body.match(rx);
+            if (match) val = match[1] || match[0];
+          } catch (ex) {}
         } else if (def && def.type === "entire") {
           val = body.substring(0, 500);
         } else if (def) {
@@ -377,13 +684,15 @@ function handleDirectMode(query, targetFields, fi) {
         row.push(val);
       });
       rows.push(row);
-    });
-  });
+    }
+  }
 
   if (rows.length === 0) {
     return CardService.newActionResponseBuilder()
       .setNotification(
-        CardService.newNotification().setText("⚠️ No emails found."),
+        CardService.newNotification().setText(
+          "⚠️ No email content could be extracted.",
+        ),
       )
       .build();
   }
@@ -401,224 +710,17 @@ function handleDirectMode(query, targetFields, fi) {
   sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
   sheet.autoResizeColumns(1, headers.length);
 
-  incrementImportCount(rows.length);
-
   return CardService.newActionResponseBuilder()
     .setNotification(
       CardService.newNotification().setText(
-        "✅ " + rows.length + " emails written to Sheet!",
+        "✅ " +
+          rows.length +
+          " email" +
+          (rows.length === 1 ? "" : "s") +
+          " written to Sheet!",
       ),
     )
     .setOpenLink(CardService.newOpenLink().setUrl(ss.getUrl()))
-    .build();
-}
-
-// ============================================================
-// JOB STATUS CARD
-// ============================================================
-
-function renderJobCard(jobId, jobName) {
-  var builder = CardService.newCardBuilder();
-  builder.setHeader(
-    CardService.newCardHeader()
-      .setTitle("Email Parser")
-      .setSubtitle("Importing..."),
-  );
-  builder.addSection(createTopNav("search"));
-
-  var job = getJobStatus(jobId);
-  var isDone = job.status === "done";
-  var statusText = isDone
-    ? "✅ Done! " + job.count + " emails imported."
-    : "⏳ Processing emails... click Check Status in about 1 minute.";
-
-  var section = CardService.newCardSection()
-    .setHeader(jobName || "Import")
-    .addWidget(CardService.newTextParagraph().setText(statusText));
-
-  if (isDone && parseInt(job.count) > 0) {
-    section.addWidget(
-      CardService.newButtonSet()
-        .addButton(
-          CardService.newTextButton()
-            .setText("📊 EXPORT TO SHEETS")
-            .setTextButtonStyle(CardService.TextButtonStyle.FILLED)
-            .setOnClickAction(
-              CardService.newAction()
-                .setFunctionName("handleExportJob")
-                .setParameters({ jobId: jobId }),
-            ),
-        )
-        .addButton(
-          CardService.newTextButton()
-            .setText("📄 EXPORT TO PDF")
-            .setOnClickAction(
-              CardService.newAction()
-                .setFunctionName("handleExportJobPdf")
-                .setParameters({ jobId: jobId }),
-            ),
-        ),
-    );
-  } else if (!isDone) {
-    section.addWidget(
-      CardService.newTextButton()
-        .setText("🔄 CHECK STATUS")
-        .setTextButtonStyle(CardService.TextButtonStyle.FILLED)
-        .setOnClickAction(
-          CardService.newAction()
-            .setFunctionName("handleCheckJobStatus")
-            .setParameters({ jobId: jobId, jobName: jobName || "" }),
-        ),
-    );
-  } else {
-    section.addWidget(
-      CardService.newTextParagraph().setText(
-        "⚠️ No emails matched the filter.",
-      ),
-    );
-  }
-
-  builder.addSection(section);
-  return builder.build();
-}
-
-function handleCheckJobStatus(e) {
-  return CardService.newActionResponseBuilder()
-    .setNavigation(
-      CardService.newNavigation().updateCard(
-        renderJobCard(e.parameters.jobId, e.parameters.jobName),
-      ),
-    )
-    .build();
-}
-
-function handleExportJob(e) {
-  var job = getJobStatus(e.parameters.jobId);
-  var summaryRes = UrlFetchApp.fetch(BACKEND_URL + "/summary/" + job.ruleId, {
-    muteHttpExceptions: true,
-  });
-  var summary = JSON.parse(summaryRes.getContentText());
-
-  if (!summary.data || summary.data.length === 0) {
-    return CardService.newActionResponseBuilder()
-      .setNotification(
-        CardService.newNotification().setText("⚠️ No data extracted."),
-      )
-      .build();
-  }
-
-  var ss = SpreadsheetApp.create(
-    "Email Parser Export — " + new Date().toLocaleDateString(),
-  );
-  var sheet = ss.getSheets()[0];
-
-  var allKeys = [];
-  summary.data.forEach(function (item) {
-    Object.keys(item.fields).forEach(function (k) {
-      if (
-        !k.startsWith("attachment_") &&
-        !k.startsWith("content_") &&
-        allKeys.indexOf(k) === -1
-      )
-        allKeys.push(k);
-    });
-  });
-
-  var header = ["Subject", "Sender", "Date"].concat(allKeys);
-  sheet.getRange(1, 1, 1, header.length).setValues([header]);
-  sheet
-    .getRange(1, 1, 1, header.length)
-    .setFontWeight("bold")
-    .setBackground("#4a86e8")
-    .setFontColor("#ffffff");
-
-  var rows = summary.data.map(function (item) {
-    var row = [item.subject || "", item.sender || "", item.createdAt || ""];
-    allKeys.forEach(function (k) {
-      row.push(item.fields[k] || "");
-    });
-    return row;
-  });
-  if (rows.length > 0)
-    sheet.getRange(2, 1, rows.length, header.length).setValues(rows);
-  sheet.autoResizeColumns(1, header.length);
-
-  incrementImportCount(rows.length);
-  clearJobProperties(e.parameters.jobId);
-
-  return CardService.newActionResponseBuilder()
-    .setNotification(
-      CardService.newNotification().setText(
-        "✅ " + rows.length + " records exported!",
-      ),
-    )
-    .setOpenLink(CardService.newOpenLink().setUrl(ss.getUrl()))
-    .build();
-}
-
-function handleExportJobPdf(e) {
-  var job = getJobStatus(e.parameters.jobId);
-  var summaryRes = UrlFetchApp.fetch(BACKEND_URL + "/summary/" + job.ruleId, { muteHttpExceptions: true });
-  var summary = JSON.parse(summaryRes.getContentText());
-
-  if (!summary.data || summary.data.length === 0) {
-    return CardService.newActionResponseBuilder()
-      .setNotification(CardService.newNotification().setText("⚠️ No data."))
-      .build();
-  }
-
-  var userEmail = Session.getActiveUser().getEmail();
-  var docTitle = "Email Parser Report — " + new Date().toLocaleDateString();
-  var doc = DocumentApp.create(docTitle);
-  var body = doc.getBody();
-
-  body.appendParagraph("EMAIL PARSER REPORT").setHeading(DocumentApp.ParagraphHeading.HEADING1);
-  body.appendParagraph("Generated: " + new Date().toLocaleString());
-  body.appendParagraph("User: " + userEmail);
-  body.appendParagraph("Total Emails: " + summary.data.length);
-  body.appendHorizontalRule();
-
-  summary.data.forEach(function(item, idx) {
-    body.appendParagraph((idx + 1) + ". " + (item.subject || "No Subject")).setHeading(DocumentApp.ParagraphHeading.HEADING2);
-    body.appendParagraph("From: " + (item.sender || ""));
-    body.appendParagraph("Date: " + (item.createdAt || ""));
-    Object.keys(item.fields).forEach(function(k) {
-      if (!k.startsWith("attachment_") && !k.startsWith("content_")) {
-        body.appendParagraph("• " + k + ": " + item.fields[k]);
-      }
-    });
-    body.appendHorizontalRule();
-  });
-
-  doc.saveAndClose();
-  var docId = doc.getId();
-
-  // Wait for Drive to finish processing
-  Utilities.sleep(3000);
-
-  // Use Drive API export instead of getAs (much more reliable)
-  var pdfBlob;
-  try {
-    pdfBlob = Drive.Files.export(docId, "application/pdf");
-  } catch (apiErr) {
-    // Fallback if API fails
-    DriveApp.getFileById(docId).setTrashed(true);
-    return CardService.newActionResponseBuilder()
-      .setNotification(CardService.newNotification().setText("⚠️ PDF generation failed. Try Export to Sheets instead."))
-      .build();
-  }
-
-  pdfBlob.setName(docTitle + ".pdf");
-  var pdfFile = DriveApp.createFile(pdfBlob);
-
-  // Clean up the temp Google Doc
-  DriveApp.getFileById(docId).setTrashed(true);
-
-  clearJobProperties(e.parameters.jobId);
-
-  return CardService.newActionResponseBuilder()
-    .setNotification(CardService.newNotification().setText("📄 PDF created!"))
-    .setOpenLink(CardService.newOpenLink().setUrl(pdfFile.getUrl()))
     .build();
 }
 

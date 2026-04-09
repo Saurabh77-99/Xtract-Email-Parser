@@ -1,15 +1,25 @@
+// ============================================================
+// CONSTANTS
+// ============================================================
+
 const BACKEND_URL = "https://extract-email-parser.vercel.app";
-// const PLAN_DAILY_LIMIT = 10;
-// const PLAN_MONTHLY_LIMIT = 50;
-// const PLAN_FIELD_LIMIT = 3;
-// const PLAN_SAVED_LIMIT = 3;
+const MAX_THREADS = 50; // Safety cap to stay within 30s execution limit
+
+// ============================================================
+// ENTRY POINTS
+// ============================================================
 
 function buildHomePage() {
   return renderSearchView();
 }
+
 function onGmailMessageOpen() {
   return renderSearchView();
 }
+
+// ============================================================
+// TOP NAV
+// ============================================================
 
 function createTopNav(active) {
   var grid = CardService.newGrid()
@@ -57,4 +67,10 @@ function handleNavClick(e) {
     return CardService.newActionResponseBuilder()
       .setNavigation(nav.updateCard(renderMoreView()))
       .build();
+}
+
+function handleNavToSearch() {
+  return CardService.newActionResponseBuilder()
+    .setNavigation(CardService.newNavigation().updateCard(renderSearchView()))
+    .build();
 }
