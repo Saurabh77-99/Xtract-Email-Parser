@@ -75,6 +75,102 @@ app.delete("/rules/:id", async (c) => {
   }
 });
 
+// ============================================================
+// BATCH INGEST — processes multiple emails in one request
+// ============================================================
+
+const batchIngestSchema = z.object({
+  ruleId: z.number(),
+  messages: z.array(
+    z.object({
+      messageId: z.string(),
+      subject: z.string(),
+      sender: z.string(),
+      date: z.string(),
+      body: z.string(),
+    }),
+  ),
+});
+
+app.post("/batch-ingest", zValidator("json", batchIngestSchema), async (c) => {
+  const { ruleId, messages: msgs } = c.req.valid("json");
+
+  const ruleRes = await db.query.rules.findFirst({
+    where: eq(rules.id, ruleId),
+  });
+  if (!ruleRes) return c.json({ error: "Rule not found" }, 404);
+
+  let targetFields: Record<string, any> = {};
+  try {
+    targetFields = JSON.parse(ruleRes.targetFields);
+  } catch {
+    return c.json({ error: "Invalid rule format" }, 500);
+  }
+
+  let successCount = 0;
+
+  for (const msg of msgs) {
+    try {
+      // Insert message (skip if already exists)
+      await db
+        .insert(messages)
+        .values({
+          messageId: msg.messageId,
+          ruleId,
+          subject: msg.subject,
+          sender: msg.sender,
+          rawBody: msg.body,
+        })
+        .onConflictDoNothing();
+
+      // Extract fields using existing logic
+      const extractedData: Array<{ key: string; value: string }> = [];
+
+      for (const [key, fieldDef] of Object.entries(targetFields)) {
+        let matchedValue = "";
+
+        if (typeof fieldDef === "string") {
+          try {
+            const regex = new RegExp(fieldDef, "i");
+            const match = msg.body.match(regex);
+            if (match) matchedValue = match[1] || match[0];
+          } catch {}
+        } else if (typeof fieldDef === "object" && fieldDef !== null) {
+          const def = fieldDef as { type: string; anchor: string; end: string };
+          matchedValue = extractTextAnchor(
+            msg.body,
+            def.anchor,
+            def.type,
+            def.end,
+          );
+        }
+
+        if (matchedValue) extractedData.push({ key, value: matchedValue });
+      }
+
+      for (const data of extractedData) {
+        await db
+          .insert(results)
+          .values({
+            messageId: msg.messageId,
+            ruleId,
+            key: data.key,
+            value: data.value,
+          })
+          .onConflictDoNothing();
+      }
+
+      successCount++;
+    } catch (err: any) {
+      console.error(
+        "Batch ingest error on " + msg.messageId + ": " + err.message,
+      );
+    }
+  }
+
+  return c.json({ successCount });
+});
+
 app.patch("/rules/:id/toggle", async (c) => {
   const id = parseInt(c.req.param("id"));
   const rule = await db.query.rules.findFirst({ where: eq(rules.id, id) });
