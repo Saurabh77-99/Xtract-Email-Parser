@@ -605,9 +605,9 @@ app.get("/home", (c) => {
 <body>
   <span class="badge">Google Workspace Add-on</span>
   <h1>Email Parser Engine</h1>
-  <p>Extract structured data from your Gmail emails and export it directly to Google Sheets or PDF — all within your Google Workspace.</p>
+  <p>Extract structured data from your Gmail emails and export it directly to Google Sheets or PDF all within your Google Workspace.</p>
   <p>Built for invoices, order confirmations, lead capture, receipts, and any templated email workflow.</p>
-  <p style="font-size:13px; color:#888;">Contact: your@email.com</p>
+  <p style="font-size:13px; color:#888;">Contact: saurabhdavda7799@gmail.com</p>
 </body>
 </html>`);
 });
@@ -637,10 +637,10 @@ app.get("/privacy", (c) => {
 
   <h2>Data we access</h2>
   <ul>
-    <li>Gmail message content — read-only, used solely to extract the fields you configure</li>
-    <li>Your Google Sheets — to write extracted data on your request</li>
-    <li>Your Google Drive — to save exported PDF documents</li>
-    <li>Your email address — used only to attribute exports</li>
+    <li>Gmail message content: read-only, used solely to extract the fields you configure</li>
+    <li>Your Google Sheets: to write extracted data on your request</li>
+    <li>Your Google Drive: to save exported PDF documents</li>
+    <li>Your email address: used only to attribute exports</li>
   </ul>
 
   <h2>Data we do NOT collect</h2>
@@ -660,7 +660,7 @@ app.get("/privacy", (c) => {
   <p>You may request deletion of all stored data by contacting us at your@email.com. Uninstalling the Add-on revokes all Gmail and Drive access immediately.</p>
 
   <h2>Contact</h2>
-  <p>For any privacy questions: your@email.com</p>
+  <p>For any privacy questions: saurabhdavda7799@gmail.com</p>
 </body>
 </html>`);
 });
