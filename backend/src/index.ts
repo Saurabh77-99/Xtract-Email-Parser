@@ -594,6 +594,7 @@ app.get("/home", (c) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="google-site-verification" content="google795d044453447e81" />
   <title>Email Parser Engine</title>
   <style>
     body { font-family: system-ui, sans-serif; max-width: 680px; margin: 60px auto; padding: 0 24px; color: #1a1a1a; }
