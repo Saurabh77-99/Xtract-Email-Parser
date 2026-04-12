@@ -608,7 +608,12 @@ app.get("/home", (c) => {
   <h1>Email Parser Engine</h1>
   <p>Extract structured data from your Gmail emails and export it directly to Google Sheets or PDF all within your Google Workspace.</p>
   <p>Built for invoices, order confirmations, lead capture, receipts, and any templated email workflow.</p>
-  <p style="font-size:13px; color:#888;">Contact: saurabhdavda7799@gmail.com</p>
+  <p>Contact: saurabhdavda7799@gmail.com</p>
+  <footer>
+    <a href="https://extract-email-parser.vercel.app/privacy">Privacy Policy</a>
+    &nbsp;·&nbsp;
+    <a href="mailto:saurabhdavda7799@gmail.com">Contact</a>
+  </footer>
 </body>
 </html>`);
 });
