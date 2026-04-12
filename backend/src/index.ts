@@ -588,4 +588,81 @@ function extractByBoundary(text: string, boundary: string): string {
   return text.split("\n")[0].trim();
 }
 
+app.get("/home", (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Parser Engine</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 680px; margin: 60px auto; padding: 0 24px; color: #1a1a1a; }
+    h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
+    p { color: #555; line-height: 1.7; margin-bottom: 16px; }
+    .badge { background: #e8f5e9; color: #2e7d32; padding: 4px 12px; border-radius: 20px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <span class="badge">Google Workspace Add-on</span>
+  <h1>Email Parser Engine</h1>
+  <p>Extract structured data from your Gmail emails and export it directly to Google Sheets or PDF — all within your Google Workspace.</p>
+  <p>Built for invoices, order confirmations, lead capture, receipts, and any templated email workflow.</p>
+  <p style="font-size:13px; color:#888;">Contact: your@email.com</p>
+</body>
+</html>`);
+});
+
+app.get("/privacy", (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — Email Parser Engine</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 680px; margin: 60px auto; padding: 0 24px; color: #1a1a1a; }
+    h1 { font-size: 26px; font-weight: 600; margin-bottom: 4px; }
+    h2 { font-size: 17px; font-weight: 600; margin: 28px 0 8px; }
+    p, li { color: #444; line-height: 1.75; margin-bottom: 12px; }
+    ul { padding-left: 20px; }
+    .date { color: #888; font-size: 13px; margin-bottom: 32px; }
+  </style>
+</head>
+<body>
+  <h1>Privacy Policy</h1>
+  <p class="date">Last updated: April 12, 2026</p>
+
+  <h2>Overview</h2>
+  <p>Email Parser Engine ("the Add-on") is a Google Workspace Gmail Add-on that extracts data from your emails and exports it to Google Sheets or PDF documents. We take your privacy seriously.</p>
+
+  <h2>Data we access</h2>
+  <ul>
+    <li>Gmail message content — read-only, used solely to extract the fields you configure</li>
+    <li>Your Google Sheets — to write extracted data on your request</li>
+    <li>Your Google Drive — to save exported PDF documents</li>
+    <li>Your email address — used only to attribute exports</li>
+  </ul>
+
+  <h2>Data we do NOT collect</h2>
+  <ul>
+    <li>We do not sell, share, or transfer your email content to any third party</li>
+    <li>We do not store your email body content beyond what is needed to complete an extraction</li>
+    <li>We do not use your data for advertising or profiling</li>
+  </ul>
+
+  <h2>Data storage</h2>
+  <p>Extraction rules and structured results (e.g. invoice numbers, amounts) may be stored in a private database associated with your account solely to power the sync and export features. Raw email bodies are not permanently stored.</p>
+
+  <h2>Third-party services</h2>
+  <p>The Add-on uses a backend hosted on Vercel (vercel.com) and a database hosted on Turso (turso.tech) for rule storage. No personal email content is shared with these services beyond what is required for extraction.</p>
+
+  <h2>Your rights</h2>
+  <p>You may request deletion of all stored data by contacting us at your@email.com. Uninstalling the Add-on revokes all Gmail and Drive access immediately.</p>
+
+  <h2>Contact</h2>
+  <p>For any privacy questions: your@email.com</p>
+</body>
+</html>`);
+});
+
 export default app;
