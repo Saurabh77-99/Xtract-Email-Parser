@@ -595,7 +595,7 @@ app.get("/home", (c) => {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="google-site-verification" content="google795d044453447e81" />
-  <title>Email Parser Engine</title>
+  <title>Mail Parser - Email Extractor &amp; Parser</title>
   <style>
     body { font-family: system-ui, sans-serif; max-width: 680px; margin: 60px auto; padding: 0 24px; color: #1a1a1a; }
     h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
@@ -605,7 +605,7 @@ app.get("/home", (c) => {
 </head>
 <body>
   <span class="badge">Google Workspace Add-on</span>
-  <h1>Email Parser Engine</h1>
+  <h1>Mail Parser - Email Extractor &amp; Parser</h1>
   <p>Extract structured data from your Gmail emails and export it directly to Google Sheets or PDF all within your Google Workspace.</p>
   <p>Built for invoices, order confirmations, lead capture, receipts, and any templated email workflow.</p>
   <p>Contact: saurabhdavda7799@gmail.com</p>
