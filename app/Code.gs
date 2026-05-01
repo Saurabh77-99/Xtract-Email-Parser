@@ -2,7 +2,7 @@
 // CONSTANTS
 // ============================================================
 
-const BACKEND_URL = "https://extract-email-parser.vercel.app";
+const BACKEND_URL = "https://www.inboxintelligenceplatform.in";
 const MAX_THREADS = 50; // Safety cap to stay within 30s execution limit
 
 // ============================================================
