@@ -7,7 +7,126 @@ import { eq, sql, inArray, and } from "drizzle-orm";
 
 const app = new Hono();
 
-app.get("/", (c) => c.text("Email Parser API running"));
+app.get("/", (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="google-site-verification" content="google795d044453447e81" />
+  <title>Mail Parser - Email Extractor &amp; Parser</title>
+
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 760px;
+      margin: 60px auto;
+      padding: 0 24px;
+      color: #1a1a1a;
+      line-height: 1.7;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      margin-top: 40px;
+      font-size: 22px;
+    }
+
+    p {
+      color: #444;
+    }
+
+    ul {
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 8px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: #e8f5e9;
+      color: #2e7d32;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      margin-bottom: 20px;
+    }
+
+    footer {
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid #eee;
+    }
+
+    a {
+      color: #1565c0;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+
+  <span class="badge">Google Workspace Add-on</span>
+
+  <h1>Mail Parser - Email Extractor &amp; Parser</h1>
+
+  <p>
+    Extract structured data from Gmail emails and export it directly to
+    Google Sheets or PDF within Google Workspace.
+  </p>
+
+  <p>
+    Built for invoices, receipts, order confirmations, lead capture,
+    and automated email workflows.
+  </p>
+
+  <h2>Features</h2>
+
+  <ul>
+    <li>Extract invoice data automatically</li>
+    <li>Parse order confirmations</li>
+    <li>Export structured data to Google Sheets</li>
+    <li>Create PDF exports</li>
+    <li>Configure custom parsing rules</li>
+    <li>Automate repetitive Gmail workflows</li>
+  </ul>
+
+  <h2>How Gmail Data Is Used</h2>
+
+  <p>
+    The add-on only accesses Gmail content required to perform
+    user-requested parsing and extraction operations.
+    Data is never sold to third parties.
+  </p>
+
+  <h2>Contact</h2>
+
+  <p>
+    saurabhdavda7799@gmail.com
+  </p>
+
+  <footer>
+    <a href="/privacy">Privacy Policy</a>
+&nbsp;·&nbsp;
+<a href="/terms">Terms</a>
+&nbsp;·&nbsp;
+<a href="mailto:saurabhdavda7799@gmail.com">Contact</a>
+  </footer>
+
+</body>
+</html>`);
+});
 
 app.get("/healthz", async (c) => {
   try {
@@ -588,43 +707,13 @@ function extractByBoundary(text: string, boundary: string): string {
   return text.split("\n")[0].trim();
 }
 
-app.get("/home", (c) => {
-  return c.html(`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="google-site-verification" content="google795d044453447e81" />
-  <title>Mail Parser - Email Extractor &amp; Parser</title>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 680px; margin: 60px auto; padding: 0 24px; color: #1a1a1a; }
-    h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
-    p { color: #555; line-height: 1.7; margin-bottom: 16px; }
-    .badge { background: #e8f5e9; color: #2e7d32; padding: 4px 12px; border-radius: 20px; font-size: 13px; }
-  </style>
-</head>
-<body>
-  <span class="badge">Google Workspace Add-on</span>
-  <h1>Mail Parser - Email Extractor &amp; Parser</h1>
-  <p>Extract structured data from your Gmail emails and export it directly to Google Sheets or PDF all within your Google Workspace.</p>
-  <p>Built for invoices, order confirmations, lead capture, receipts, and any templated email workflow.</p>
-  <p>Contact: saurabhdavda7799@gmail.com</p>
-  <footer>
-    <a href="https://extract-email-parser.vercel.app/privacy">Privacy Policy</a>
-    &nbsp;·&nbsp;
-    <a href="mailto:saurabhdavda7799@gmail.com">Contact</a>
-  </footer>
-</body>
-</html>`);
-});
-
 app.get("/privacy", (c) => {
   return c.html(`<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Privacy Policy — Email Parser Engine</title>
+  <title>Privacy Policy — Mail Parser - Email Extractor & Parser</title>
   <style>
     body { font-family: system-ui, sans-serif; max-width: 680px; margin: 60px auto; padding: 0 24px; color: #1a1a1a; }
     h1 { font-size: 26px; font-weight: 600; margin-bottom: 4px; }
@@ -639,7 +728,7 @@ app.get("/privacy", (c) => {
   <p class="date">Last updated: April 12, 2026</p>
 
   <h2>Overview</h2>
-  <p>Email Parser Engine ("the Add-on") is a Google Workspace Gmail Add-on that extracts data from your emails and exports it to Google Sheets or PDF documents. We take your privacy seriously.</p>
+  <p>Mail Parser - Email Extractor & Parser ("the Add-on") is a Google Workspace Gmail Add-on that extracts data from your emails and exports it to Google Sheets or PDF documents. We take your privacy seriously.</p>
 
   <h2>Data we access</h2>
   <ul>
@@ -660,15 +749,41 @@ app.get("/privacy", (c) => {
   <p>Extraction rules and structured results (e.g. invoice numbers, amounts) may be stored in a private database associated with your account solely to power the sync and export features. Raw email bodies are not permanently stored.</p>
 
   <h2>Third-party services</h2>
-  <p>The Add-on uses a backend hosted on Vercel (vercel.com) and a database hosted on Turso (turso.tech) for rule storage. No personal email content is shared with these services beyond what is required for extraction.</p>
+  <p>The Add-on uses secure cloud infrastructure and database services to process extraction rules and exports. Data is only processed as required to provide the application's functionality.</p>
 
   <h2>Your rights</h2>
-  <p>You may request deletion of all stored data by contacting us at your@email.com. Uninstalling the Add-on revokes all Gmail and Drive access immediately.</p>
+  <p>You may request deletion of all stored data by contacting us at saurabhdavda7799@gmail.com. Uninstalling the Add-on revokes all Gmail and Drive access immediately.</p>
 
   <h2>Contact</h2>
   <p>For any privacy questions: saurabhdavda7799@gmail.com</p>
 </body>
 </html>`);
+});
+
+app.get("/terms", (c) => {
+  return c.html(`
+    <html>
+      <head>
+        <title>Terms of Service</title>
+      </head>
+      <body style="font-family:system-ui;max-width:700px;margin:60px auto;padding:0 24px;">
+        <h1>Terms of Service</h1>
+        <p>
+            By using Mail Parser - Email Extractor & Parser,
+            you agree to use the application in compliance
+            with Google's policies and applicable laws.
+        </p>
+
+        <p>
+          The service is provided "as is" without warranties of any kind.
+        </p>
+
+        <p>
+          Contact: saurabhdavda7799@gmail.com
+        </p>
+      </body>
+    </html>
+  `);
 });
 
 export default app;
