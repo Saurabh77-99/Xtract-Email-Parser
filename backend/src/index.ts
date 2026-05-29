@@ -113,7 +113,7 @@ app.get("/", (c) => {
   <h2>Contact</h2>
 
   <p>
-    saurabhdavda7799@gmail.com
+    rahulshah007@gmail.com
   </p>
 
   <footer>
@@ -121,7 +121,7 @@ app.get("/", (c) => {
 &nbsp;·&nbsp;
 <a href="/terms">Terms</a>
 &nbsp;·&nbsp;
-<a href="mailto:saurabhdavda7799@gmail.com">Contact</a>
+<a href="mailto:rahulshah007@gmail.com">Contact</a>
   </footer>
 
 </body>
@@ -752,10 +752,10 @@ app.get("/privacy", (c) => {
   <p>The Add-on uses secure cloud infrastructure and database services to process extraction rules and exports. Data is only processed as required to provide the application's functionality.</p>
 
   <h2>Your rights</h2>
-  <p>You may request deletion of all stored data by contacting us at saurabhdavda7799@gmail.com. Uninstalling the Add-on revokes all Gmail and Drive access immediately.</p>
+  <p>You may request deletion of all stored data by contacting us at rahulshah007@gmail.com. Uninstalling the Add-on revokes all Gmail and Drive access immediately.</p>
 
   <h2>Contact</h2>
-  <p>For any privacy questions: saurabhdavda7799@gmail.com</p>
+  <p>For any privacy questions: rahulshah007@gmail.com</p>
 </body>
 </html>`);
 });
@@ -779,7 +779,7 @@ app.get("/terms", (c) => {
         </p>
 
         <p>
-          Contact: saurabhdavda7799@gmail.com
+          Contact: rahulshah007@gmail.com
         </p>
       </body>
     </html>
